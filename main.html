@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Disaster Help App</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      body {
+        background: linear-gradient(to right, #f3f4f6, #e5e7eb);
+        color: #111827;
+        padding: 2rem;
+        text-align: center;
+      }
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        color: #dc2626;
+      }
+      .help-btn {
+        background-color: #dc2626;
+        color: white;
+        border: none;
+        padding: 1.5rem 3rem;
+        font-size: 1.8rem;
+        font-weight: bold;
+        border-radius: 1rem;
+        cursor: pointer;
+        margin: 1rem auto;
+        display: inline-block;
+        box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+        transition: transform 0.2s;
+      }
+      .help-btn:hover {
+        transform: scale(1.05);
+      }
+      .info-text {
+        margin: 1rem 0 2rem;
+        font-size: 1rem;
+        color: #374151;
+      }
+      .contact-section {
+        margin: 2rem auto;
+        font-size: 1.1rem;
+      }
+      .contact-section a {
+        color: #1d4ed8;
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .contact-section a:hover {
+        text-decoration: underline;
+      }
+      .register-section {
+        margin: 2rem auto;
+      }
+      .register-btn {
+        background-color: #16a34a;
+        color: white;
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+        border: none;
+        border-radius: 0.8rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .register-btn:hover {
+        background-color: #15803d;
+      }
+      .form-popup {
+        display: none;
+        background-color: white;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        padding: 1rem;
+        width: 300px;
+        margin: 2rem auto;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      }
+      .form-popup input {
+        width: 90%;
+        padding: 0.6rem;
+        margin-bottom: 0.6rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .form-popup button {
+        margin-top: 0.5rem;
+        padding: 0.6rem 1rem;
+        background-color: #1d4ed8;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .ngo-list {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background-color: #f9fafb;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      }
+      .ngo-list ul {
+        list-style: none;
+      }
+      .ngo-list li {
+        padding: 0.4rem 0;
+        font-weight: bold;
+        color: #111827;
+      }
+    </style>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+      // Firebase config
+      const firebaseConfig = {
+        apiKey: "AIzaSyBebqloK7hS8emXIisPDwB3A9SlouywOdY",
+        authDomain: "disasterhelpapp-f7b3b.firebaseapp.com",
+        projectId: "disasterhelpapp-f7b3b",
+        storageBucket: "disasterhelpapp-f7b3b.appspot.com",
+        messagingSenderId: "693216338189",
+        appId: "1:693216338189:web:1ef6691aa566f25f499044",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+    </script>
+  </head>
+
+  <body>
+    <h1>Disaster Help App</h1>
+
+    <button class="help-btn" onclick="sendHelp()">🔴 I NEED HELP</button>
+
+    <p class="info-text">
+      Press the red button in an emergency. Your alert will be sent with your
+      location to all registered NGOs.
+    </p>
+
+    <div class="contact-section">
+      <p>📞 <a href="tel:100">Call Police (100)</a></p>
+      <p>🚑 <a href="tel:108">Call Ambulance (108)</a></p>
+    </div>
+
+    <div class="register-section">
+      <button class="register-btn" onclick="toggleForm()">
+        ➕ Register New NGO
+      </button>
+      <div class="form-popup" id="ngoForm">
+        <input type="text" id="ngoName" placeholder="NGO Name" required />
+        <input
+          type="text"
+          id="ngoPhone"
+          placeholder="Contact Number"
+          required
+        />
+        <input type="text" id="ngoCity" placeholder="City / Area" required />
+        <button onclick="registerNGO()">Submit</button>
+      </div>
+    </div>
+
+    <div class="ngo-list" id="ngoList">
+      <h3>Registered NGOs</h3>
+      <ul id="ngoUl"></ul>
+    </div>
+
+    <script>
+      function toggleForm() {
+        const form = document.getElementById("ngoForm");
+        form.style.display =
+          form.style.display === "none" || form.style.display === ""
+            ? "block"
+            : "none";
+      }
+
+      function registerNGO() {
+        const name = document.getElementById("ngoName").value.trim();
+        const phone = document.getElementById("ngoPhone").value.trim();
+        const city = document.getElementById("ngoCity").value.trim();
+
+        if (!name || !phone || !city) {
+          alert("Please fill all fields.");
+          return;
+        }
+
+        db.collection("ngos")
+          .add({ name, phone, city })
+          .then(() => {
+            document.getElementById("ngoName").value = "";
+            document.getElementById("ngoPhone").value = "";
+            document.getElementById("ngoCity").value = "";
+            document.getElementById("ngoForm").style.display = "none";
+            loadNGOs();
+          })
+          .catch((error) => {
+            alert("Error registering NGO: " + error.message);
+          });
+      }
+
+      function loadNGOs() {
+        db.collection("ngos")
+          .get()
+          .then((snapshot) => {
+            const ul = document.getElementById("ngoUl");
+            ul.innerHTML = "";
+            snapshot.forEach((doc) => {
+              const ngo = doc.data();
+              const li = document.createElement("li");
+              li.textContent = `${ngo.name} (${ngo.city}) - 📞 ${ngo.phone}`;
+              ul.appendChild(li);
+            });
+          });
+      }
+
+      function sendHelp() {
+        if (!navigator.geolocation) {
+          alert("Geolocation is not supported by your browser.");
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const latitude = position.coords.latitude.toFixed(4);
+            const longitude = position.coords.longitude.toFixed(4);
+
+            db.collection("ngos")
+              .get()
+              .then((snapshot) => {
+                if (snapshot.empty) {
+                  alert("No NGOs registered yet!");
+                  return;
+                }
+
+                let message = `🚨 EMERGENCY ALERT:\nPlease help, I am in danger.\nMy location: https://www.google.com/maps?q=${latitude},${longitude}\n\nNGOs alerted:`;
+
+                snapshot.forEach((doc) => {
+                  const ngo = doc.data();
+                  message += `\n- ${ngo.name} (${ngo.city}): ${ngo.phone}`;
+                });
+
+                alert(message);
+              });
+          },
+          (error) => {
+            alert("Unable to get location. Please enable location services.");
+          }
+        );
+      }
+
+      window.onload = loadNGOs;
+    </script>
+  </body>
+</html>
